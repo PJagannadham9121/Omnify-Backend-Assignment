@@ -1,0 +1,12 @@
+.venv/
+
+
+# Log files
+*.log
+
+
+# Python cache files
+__pycache__/
+*.pyc[cod]
+
+db.sqlite3
