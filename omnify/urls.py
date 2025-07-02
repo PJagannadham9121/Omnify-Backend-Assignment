@@ -1,10 +1,13 @@
 
 from django.contrib import admin
 from django.urls import path
+from fitness.api import router as fitness_router
 
-from fitness.api import api as fitness_api
 
+from ninja import NinjaAPI
+api = NinjaAPI()
+api.add_router("", fitness_router)
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', fitness_api.urls),
+    path('api/', api.urls),
 ]
