@@ -25,6 +25,9 @@ Clone this repo:
 6.Run Backend Server
     - python manage.py runserver # Default: http://localhost:8000
 
+7.Run TestCases:
+    - python manage.py test fitness
+
 
 Feature wise implemetation:
 
@@ -37,6 +40,9 @@ Feature wise implemetation:
 
 3.Handling Timezone:
     - Used pytz to convert classes time to respected timezone of a user.
+
+4.Test cases:
+    - Implemented Testcases to cover all cases.
 
 
 Curl for Endpoints:
