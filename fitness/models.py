@@ -36,6 +36,9 @@ class Booking(models.Model):
     client_email = models.EmailField()
     booking_time = models.DateTimeField(default=timezone.now)
 
+    class Meta:
+        unique_together = ('fitness_class', 'client_email')
+
     def __str__(self):
         return f"{self.client_name} - {self.fitness_class.name}"
 
