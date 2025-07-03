@@ -5,6 +5,7 @@ from typing import List
 from pytz import timezone as tz , all_timezones
 
 from django.utils import timezone 
+from django.db import transaction
 
 router = Router()
 
@@ -22,7 +23,6 @@ def get_classes(request, user_timezone: str = "Asia/Kolkata"):
         logger.warning("Invalid timezone: %s", user_timezone)
         return 400, {"error": "Invalid timezone"}
 
-    logger.debug("Using timezone: %s", user_tz)
 
     classes = FitnessClass.objects.filter(datetime__gte=timezone.now()).select_related("instructor").all()
 
@@ -50,31 +50,33 @@ def get_classes(request, user_timezone: str = "Asia/Kolkata"):
 @router.post("/book", response={201: BookingOut, 400: ErrorResponse, 404: ErrorResponse})
 def book_class(request, payload: BookingIn):
     try:
-        fitness_class = FitnessClass.objects.get(id=payload.fitness_class_id)
+        with transaction.atomic():
+            # handling overbooking condition 
+            fitness_class = FitnessClass.objects.select_for_update().get(id=payload.fitness_class_id)
+            if fitness_class.available_slots <= 0:
+                logger.warning("Booking failed due to no slots for class ID: %d", payload.fitness_class_id)
+                return 400, {"error": "No available slots for this class"}
+
+            if payload.client_email and Booking.objects.filter(
+                client_email=payload.client_email, 
+                fitness_class=fitness_class
+            ).exists():
+                # handling single user can't book same class multiple times
+                logger.warning("Booking a class is rejected/failed because of User (Email: %s) is already Enrolled the class ID: %d",payload.client_email,payload.fitness_class_id)
+                return 400, {"error": "You have already booked this class"}
+
+            fitness_class.available_slots -= 1
+            fitness_class.save()
+
+            booking = Booking.objects.create(
+                fitness_class=fitness_class,
+                client_name=payload.client_name,
+                client_email=payload.client_email
+            )
+            logger.info("Booking created for user: %s", payload.client_email)
     except FitnessClass.DoesNotExist:
-        logger.warning("Booking failed due to no matching classes found for ID: %d",payload.fitness_class_id)
+        logger.warning("Booking failed. Class not found for ID: %d", payload.fitness_class_id)
         return 404, {"error": "Fitness class not found"}
-
-    if fitness_class.available_slots <= 0:
-        logger.warning("Booking failed due to no slots for class ID: %d", payload.fitness_class_id)
-        return 400, {"error": "No available slots for this class"}
-
-    if payload.client_email and Booking.objects.filter(
-        client_email=payload.client_email, 
-        fitness_class=fitness_class
-    ).exists():
-        logger.warning("Booking a class is rejected/failed because of User (Email: %s) is already Enrolled the class ID: %d",payload.client_email,payload.fitness_class_id)
-        return 400, {"error": "You have already booked this class"}
-
-    fitness_class.available_slots -= 1
-    fitness_class.save()
-
-    booking = Booking.objects.create(
-        fitness_class=fitness_class,
-        client_name=payload.client_name,
-        client_email=payload.client_email
-    )
-    logger.info("Booking created for user: %s", payload.client_email)
 
 
     return 201, BookingOut(
