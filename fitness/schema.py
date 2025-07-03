@@ -1,6 +1,7 @@
 
 from pydantic import BaseModel
 from datetime import datetime
+from typing import List
 
 
 
@@ -25,6 +26,17 @@ class FitnessClassOut(BaseModel):
         from_attributes = True
 
 
+class FitnessClassSummary(BaseModel):
+    total_classes: int
+    classes: List[FitnessClassOut]
+
+    class Config:
+        from_attributes = True
+    
+
+
+
+
 #  Booking payload
 class BookingIn(BaseModel):
     fitness_class_id: int
@@ -34,12 +46,32 @@ class BookingIn(BaseModel):
     class Config:
         from_attributes = True
 
+class BookingSummaryItem(BaseModel):
+    id: int
+    name: str
+    type: str
+    datetime: datetime
+    instructor: InstructorOut
+    booking_time: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class BookingOut(BaseModel):
     id: int
-    fitness_class: FitnessClassOut
     client_name: str
     client_email: str
-    booking_time: datetime
+    fitness_class: BookingSummaryItem
+
+    class Config:
+        from_attributes = True
+
+
+class BookingSummary(BaseModel):
+    client_email: str
+    total_bookings: int
+    bookings: List[BookingSummaryItem]
 
     class Config:
         from_attributes = True

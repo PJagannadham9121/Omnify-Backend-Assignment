@@ -1,5 +1,5 @@
 from ninja import Router
-from .schema import FitnessClassOut, BookingIn, BookingOut, ErrorResponse, InstructorOut
+from .schema import FitnessClassOut, BookingIn, BookingOut, ErrorResponse, InstructorOut , FitnessClassSummary , BookingSummary , BookingSummaryItem
 from .models import FitnessClass, Booking
 from typing import List  
 from pytz import timezone as tz , all_timezones
@@ -15,7 +15,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@router.get("/classes", response={200: List[FitnessClassOut], 400: ErrorResponse})
+@router.get("/classes", response={200: FitnessClassSummary, 400: ErrorResponse})
 def get_classes(request, user_timezone: str = "Asia/Kolkata"):
     try:
         user_tz = tz(user_timezone)
@@ -24,11 +24,11 @@ def get_classes(request, user_timezone: str = "Asia/Kolkata"):
         return 400, {"error": "Invalid timezone"}
 
 
-    classes = FitnessClass.objects.filter(datetime__gte=timezone.now()).select_related("instructor").all()
+    fitness_classes = FitnessClass.objects.filter(datetime__gte=timezone.now()).select_related("instructor").all()
 
-    response = []
-    for cls in classes:
-        response.append(
+    classes = []
+    for cls in fitness_classes:
+        classes.append(
             FitnessClassOut(
                 id=cls.id,
                 name=cls.name,
@@ -43,6 +43,12 @@ def get_classes(request, user_timezone: str = "Asia/Kolkata"):
                 )
             )
         )
+
+    response = {
+        "total_classes": fitness_classes.count(),
+        "classes": classes
+    }
+
 
     return 200, response
 
@@ -81,33 +87,50 @@ def book_class(request, payload: BookingIn):
 
     return 201, BookingOut(
         id=booking.id,
-        fitness_class=FitnessClassOut(
+        client_name=booking.client_name,
+        client_email=booking.client_email,
+        fitness_class=BookingSummaryItem(
             id=booking.fitness_class.id,
             name=booking.fitness_class.name,
             type=booking.fitness_class.type,
             datetime=booking.fitness_class.datetime,
-            total_slots=booking.fitness_class.total_slots,
-            available_slots=booking.fitness_class.available_slots,
             instructor=InstructorOut(
                 id=booking.fitness_class.instructor.id,
                 name=booking.fitness_class.instructor.name,
                 email=booking.fitness_class.instructor.email,
-            )
+            ),
+            booking_time= booking.booking_time,
         ),
-        client_name=booking.client_name,
-        client_email=booking.client_email,
-        booking_time=booking.booking_time  
     )
 
 
-@router.get("/bookings", response={200: List[BookingOut]})
+@router.get("/bookings", response={200: BookingSummary})
 def get_bookings_by_email(request, client_email: str):
     bookings = Booking.objects.filter(
         client_email=client_email
     ).select_related("fitness_class__instructor")
 
-    if not bookings.exists():
-        logger.info("No bookings found for email: %s", client_email)
-        return 200, []
-    
-    return 200, bookings
+
+    booking_summaries = []
+    for b in bookings:
+        booking_summaries.append(
+             BookingSummaryItem(
+                id=b.fitness_class.id,
+                name=b.fitness_class.name,
+                type=b.fitness_class.type,
+                datetime=b.fitness_class.datetime,
+                instructor=InstructorOut(
+                    id=b.fitness_class.instructor.id,
+                    name=b.fitness_class.instructor.name,
+                    email=b.fitness_class.instructor.email,
+                ),
+                booking_time= b.booking_time
+            ),
+          
+        )
+
+    return 200, {
+        "client_email": client_email,
+        "total_bookings": bookings.count(),
+        "bookings": booking_summaries
+    }
