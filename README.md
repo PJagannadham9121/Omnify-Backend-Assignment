@@ -15,13 +15,13 @@ Clone this repo:
 
 3.Install required Modules:
     - pip install -r requirement.txt
- 
-4.Add Dummy data for classes:
-    - python manage.py seed_data
 
-5.Run migrations to create tables in database:
+4.Run migrations to create tables in database:
     - python manage.py migrate
-
+ 
+5.Add Dummy data for classes:
+    - python manage.py seed_data
+    
 6.Run Backend Server
     - python manage.py runserver # Default: http://localhost:8000
 
