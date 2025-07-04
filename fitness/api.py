@@ -1,5 +1,5 @@
 from ninja import Router
-from .schema import FitnessClassOut, BookingIn, BookingOut, ErrorResponse, InstructorOut , FitnessClassSummary , BookingSummary , BookingSummaryItem
+from .schema import FitnessClassOut, BookingIn, BookingOut, ErrorResponse, InstructorOut , FitnessClassSummary , BookingSummary 
 from .models import FitnessClass, Booking
 from typing import List  
 from pytz import timezone as tz , all_timezones
@@ -89,18 +89,8 @@ def book_class(request, payload: BookingIn):
         id=booking.id,
         client_name=booking.client_name,
         client_email=booking.client_email,
-        fitness_class=BookingSummaryItem(
-            id=booking.fitness_class.id,
-            name=booking.fitness_class.name,
-            type=booking.fitness_class.type,
-            datetime=booking.fitness_class.datetime,
-            instructor=InstructorOut(
-                id=booking.fitness_class.instructor.id,
-                name=booking.fitness_class.instructor.name,
-                email=booking.fitness_class.instructor.email,
-            ),
-            booking_time= booking.booking_time,
-        ),
+        fitness_class_id= fitness_class.id,
+        booked_at= booking.booked_at,
     )
 
 
@@ -110,23 +100,24 @@ def get_bookings_by_email(request, client_email: str):
         client_email=client_email
     ).select_related("fitness_class__instructor")
 
-
     booking_summaries = []
     for b in bookings:
         booking_summaries.append(
-             BookingSummaryItem(
-                id=b.fitness_class.id,
-                name=b.fitness_class.name,
-                type=b.fitness_class.type,
-                datetime=b.fitness_class.datetime,
-                instructor=InstructorOut(
-                    id=b.fitness_class.instructor.id,
-                    name=b.fitness_class.instructor.name,
-                    email=b.fitness_class.instructor.email,
-                ),
-                booking_time= b.booking_time
-            ),
-          
+            {
+                "id": b.id,  
+                "booked_at": b.booked_at,
+                "fitness_class": {
+                    "id": b.fitness_class.id,
+                    "name": b.fitness_class.name,
+                    "type": b.fitness_class.type,
+                    "datetime": b.fitness_class.datetime,
+                    "instructor": {
+                        "id": b.fitness_class.instructor.id,
+                        "name": b.fitness_class.instructor.name,
+                        "email": b.fitness_class.instructor.email,
+                    },
+                },
+            }
         )
 
     return 200, {

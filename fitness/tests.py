@@ -28,13 +28,11 @@ class FitnessClassAPITest(TestCase):
         )
 
     def test_get_classes_with_valid_timezone(self):
-        print("valid timezone")
         response = client.get("/classes",query_params={"user_timezone": "Asia/Kolkata"})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.json()),1)
+        self.assertEqual(response.json().get("total_classes"),1)
 
     def test_get_classes_with_invalid_timezone(self):
-        print("invalid timezone")
         response = client.get("/classes", query_params={"user_timezone": "Invalid/TimeZone"})
         self.assertEqual(response.status_code, 400)
 
@@ -83,7 +81,7 @@ class BookClassAPITest(TestCase):
 
 class GetBookingsAPITest(TestCase):
     def setUp(self):
-        self.instructor = Instructor.objects.create(name="Test", email="test@x.com")
+        self.instructor = Instructor.objects.create(name="Test", email="test@example.com")
         self.fitness_class = FitnessClass.objects.create(
             name="Zumba",
             type="zumba",
@@ -101,11 +99,14 @@ class GetBookingsAPITest(TestCase):
     def test_fetch_bookings_success(self):
         response = client.get("/bookings", query_params={"client_email": "jagan@example.com"})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(response.json().get("total_bookings"), 1)
 
     def test_fetch_bookings_empty(self):
         response = client.get("/bookings", query_params={"client_email": "unknown@example.com"})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), [])
+        self.assertEqual(response.json().get("total_bookings"), 0)
+        self.assertEqual(response.json().get("bookings"), [])
+
+
 
 

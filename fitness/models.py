@@ -34,7 +34,7 @@ class Booking(models.Model):
     fitness_class = models.ForeignKey(FitnessClass, on_delete=models.CASCADE)
     client_name = models.CharField(max_length=100)
     client_email = models.EmailField()
-    booking_time = models.DateTimeField(default=timezone.now)
+    booked_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         unique_together = ('fitness_class', 'client_email')
