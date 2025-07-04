@@ -24,7 +24,7 @@ def get_classes(request, user_timezone: str = "Asia/Kolkata"):
         return 400, {"error": "Invalid timezone"}
 
 
-    fitness_classes = FitnessClass.objects.filter(datetime__gte=timezone.now()).select_related("instructor").all()
+    fitness_classes = FitnessClass.objects.filter(datetime__gte=timezone.now(),available_slots__gt=0).select_related("instructor").all()
 
     classes = []
     for cls in fitness_classes:
